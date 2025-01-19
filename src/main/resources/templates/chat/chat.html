@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .chat-header {
+            padding: 15px;
+            background-color: #007bff;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background-color: #e9ecef;
+        }
+        .chat-message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+        .chat-message.self {
+            justify-content: flex-end;
+        }
+        .chat-message .message {
+            max-width: 60%;
+            padding: 10px;
+            border-radius: 15px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .chat-message.self .message {
+            background-color: #007bff;
+            color: #fff;
+        }
+        .chat-footer {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #fff;
+            border-top: 1px solid #dee2e6;
+        }
+        .chat-footer input {
+            flex: 1;
+            margin-right: 10px;
+            border-radius: 20px;
+            padding: 10px 15px;
+        }
+        .typing-indicator {
+            font-style: italic;
+            color: gray;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <h5>Chat with <span id="chatWith">John Doe</span></h5>
+        <button class="btn btn-sm btn-light" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Chat Body -->
+    <div class="chat-body" id="chatBody">
+        <!-- Messages will be appended here dynamically -->
+    </div>
+
+    <!-- Typing Indicator -->
+    <div class="typing-indicator" id="typingIndicator" style="display: none;">
+        <span id="typingUser"></span> is typing...
+    </div>
+
+    <!-- Chat Footer -->
+    <div class="chat-footer">
+        <input type="text" id="messageInput" class="form-control" placeholder="Type your message...">
+        <button class="btn btn-primary" id="sendMessageBtn"><i class="fa-solid fa-paper-plane"></i></button>
+        <button class="btn btn-light" id="emojiPickerBtn"><i class="fa-solid fa-smile"></i></button>
+        <button class="btn btn-light" id="fileUploadBtn"><i class="fa-solid fa-paperclip"></i></button>
+        <input type="file" id="fileInput" style="display: none;">
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom JS -->
+<script>
+    const socket = new WebSocket("ws://localhost:8080/chat");
+    const chatBody = document.getElementById("chatBody");
+    const messageInput = document.getElementById("messageInput");
+    const sendMessageBtn = document.getElementById("sendMessageBtn");
+    const typingIndicator = document.getElementById("typingIndicator");
+    const typingUser = document.getElementById("typingUser");
+    let typingTimeout;
+
+    let stompClient = null;
+
+    function connect() {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function () {
+            stompClient.subscribe('/topic/public', function (message) {
+                const data = JSON.parse(message.body);
+                if (data.type === "CHAT") {
+                    addMessageToChat(data.content, data.sender, false);
+                } else if (data.type === "TYPING") {
+                    showTypingIndicator(data.sender);
+                }
+            });
+        });
+    }
+
+    function sendMessage() {
+        const messageContent = messageInput.value.trim();
+        if (messageContent) {
+            const chatMessage = {
+                sender: "YourUsername", // Replace with dynamic username
+                content: messageContent,
+                type: "CHAT"
+            };
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+            messageInput.value = "";
+        }
+    }
+
+    function emitTyping() {
+        const chatMessage = {
+            sender: "YourUsername", // Replace with dynamic username
+            type: "TYPING"
+        };
+        stompClient.send("/app/chat.addUser", {}, JSON.stringify(chatMessage));
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        connect();
+
+        messageInput.addEventListener("keypress", emitTyping);
+        sendMessageBtn.addEventListener("click", sendMessage);
+    });
+
+
+    // WebSocket event handlers
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.type === "message") {
+            addMessageToChat(data.message, data.sender, data.self);
+        } else if (data.type === "typing") {
+            showTypingIndicator(data.sender);
+        }
+    };
+
+    // Add message to chat body
+    function addMessageToChat(message, sender, isSelf) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `chat-message ${isSelf ? "self" : ""}`;
+        messageDiv.innerHTML = `
+                <div class="message">
+                    <strong>${sender}:</strong> ${message}
+                </div>
+            `;
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    // Show typing indicator
+    function showTypingIndicator(user) {
+        typingUser.innerText = user;
+        typingIndicator.style.display = "block";
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            typingIndicator.style.display = "none";
+        }, 2000);
+    }
+
+    // Send message
+    sendMessageBtn.addEventListener("click", () => {
+        const message = messageInput.value.trim();
+        if (message) {
+            socket.send(JSON.stringify({ type: "message", message }));
+            messageInput.value = "";
+        }
+    });
+
+    // Emit typing event
+    messageInput.addEventListener("input", () => {
+        socket.send(JSON.stringify({ type: "typing" }));
+    });
+
+    // Emoji picker
+    document.getElementById("emojiPickerBtn").addEventListener("click", () => {
+        messageInput.value += "😊"; // Simple emoji picker demo
+    });
+
+    // File upload
+    document.getElementById("fileUploadBtn").addEventListener("click", () => {
+        document.getElementById("fileInput").click();
+    });
+
+    document.getElementById("fileInput").addEventListener("change", (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            // Handle file upload logic here
+            alert(`File uploaded: ${file.name}`);
+        }
+    });
+
+    // Logout logic
+    function logout() {
+        alert("You have logged out.");
+        // Redirect to login page or perform logout actions
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add/Edit Order</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <header class="my-4 text-center">
+        <h1 class="display-6" th:text="${order.id == null ? 'Add New Order' : 'Edit Order'}"></h1>
+    </header>
+
+    <div class="form-container">
+        <form th:action="@{/orders/add}" th:object="${order}" method="post" class="needs-validation" novalidate>
+            <div class="mb-3">
+                <label for="productName" class="form-label">Product Name</label>
+                <input type="text" th:field="*{productName}" id="productName" class="form-control" required>
+                <div class="invalid-feedback">Please enter the product name.</div>
+            </div>
+            <div class="mb-3">
+                <label for="quantity" class="form-label">Quantity</label>
+                <input type="number" th:field="*{quantity}" id="quantity" class="form-control" required>
+                <div class="invalid-feedback">Please enter the quantity.</div>
+            </div>
+            <div class="mb-3">
+                <label for="totalPrice" class="form-label">Total Price</label>
+                <input type="text" th:field="*{totalPrice}" id="totalPrice" class="form-control" required>
+                <div class="invalid-feedback">Please enter the total price.</div>
+            </div>
+            <div class="mb-3">
+                <label for="customer" class="form-label">Customer</label>
+                <select th:field="*{customer}" id="customer" class="form-select" required>
+                    <option th:each="customer : ${customers}" th:value="${customer}" th:text="${customer.name}"></option>
+                </select>
+                <div class="invalid-feedback">Please select a customer.</div>
+            </div>
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <a href="/orders" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
