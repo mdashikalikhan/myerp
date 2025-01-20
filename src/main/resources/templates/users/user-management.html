@@ -10,9 +10,13 @@
 
 <div class="container mt-4">
     <h2>User Management</h2>
-    <div class="d-flex justify-content-end mb-3">
+
+    <div class="d-flex justify-content-between mb-3">
+        <input type="text" id="searchInput" class="form-control w-50" placeholder="Search by username or email..." onkeyup="filterUsers()">
+        <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
         <button class="btn btn-primary" onclick="showAddUserModal()">Add New User</button>
     </div>
+
     <table class="table table-hover table-striped table-bordered">
         <thead class="table-dark">
         <tr>
@@ -25,61 +29,38 @@
         </thead>
         <tbody id="userTable"></tbody>
     </table>
-</div>
 
-<!-- Add/Edit User Modal -->
-<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 id="userModalTitle"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="userForm">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" id="username" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" id="email" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Role</label>
-                        <select id="role" class="form-select">
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="USER">USER</option>
-                            <option value="CLIENT">CLIENT</option>
-                        </select>
-                    </div>
-                    <input type="hidden" id="userId">
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="saveUser()">Save</button>
-            </div>
-        </div>
-    </div>
+    <nav>
+        <ul class="pagination">
+            <li class="page-item"><a class="page-link" href="#" onclick="prevPage()">Previous</a></li>
+            <li class="page-item"><a class="page-link" href="#" onclick="nextPage()">Next</a></li>
+        </ul>
+    </nav>
 </div>
 
 <script>
-    const userTable = document.getElementById('userTable');
-    const userModal = new bootstrap.Modal(document.getElementById('userModal'));
+    let users = [];
+    let currentPage = 1;
+    const itemsPerPage = 5;
 
     async function fetchUsers() {
         try {
             const response = await axios.get('/api/users');
-            renderUserTable(response.data);
+            users = response.data;
+            renderUserTable();
         } catch (error) {
             console.error('Error fetching users:', error);
         }
     }
 
-    function renderUserTable(users) {
+    function renderUserTable() {
+        const userTable = document.getElementById('userTable');
         userTable.innerHTML = '';
-        users.forEach(user => {
+        let start = (currentPage - 1) * itemsPerPage;
+        let end = start + itemsPerPage;
+        let paginatedUsers = users.slice(start, end);
+
+        paginatedUsers.forEach(user => {
             userTable.innerHTML += `
                 <tr>
                     <td>${user.id}</td>
@@ -87,7 +68,7 @@
                     <td>${user.email}</td>
                     <td>${user.role}</td>
                     <td>
-                        <button class="btn btn-sm btn-warning" onclick="showEditUserModal(${user.id}, '${user.username}', '${user.email}', '${user.role}')">Edit</button>
+                        <button class="btn btn-sm btn-warning" onclick="showEditUserModal(${user.id})">Edit</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">Delete</button>
                     </td>
                 </tr>
@@ -95,56 +76,64 @@
         });
     }
 
-    function showAddUserModal() {
-        document.getElementById('userModalTitle').innerText = 'Add New User';
-        document.getElementById('userForm').reset();
-        document.getElementById('userId').value = '';
-        userModal.show();
-    }
-
-    function showEditUserModal(id, username, email, role) {
-        document.getElementById('userModalTitle').innerText = 'Edit User';
-        document.getElementById('username').value = username;
-        document.getElementById('email').value = email;
-        document.getElementById('role').value = role;
-        document.getElementById('userId').value = id;
-        userModal.show();
-    }
-
-    async function saveUser() {
-        const id = document.getElementById('userId').value;
-        const userData = {
-            username: document.getElementById('username').value,
-            email: document.getElementById('email').value,
-            role: document.getElementById('role').value
-        };
-
-        try {
-            if (id) {
-                await axios.put(`/api/users/${id}`, userData);
-            } else {
-                await axios.post('/api/users', userData);
-            }
-            userModal.hide();
-            fetchUsers();
-        } catch (error) {
-            console.error('Error saving user:', error);
+    function nextPage() {
+        if (currentPage * itemsPerPage < users.length) {
+            currentPage++;
+            renderUserTable();
         }
     }
 
-    async function deleteUser(id) {
-        if (confirm('Are you sure you want to delete this user?')) {
-            try {
-                await axios.delete(`/api/users/${id}`);
-                fetchUsers();
-            } catch (error) {
-                console.error('Error deleting user:', error);
-            }
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            renderUserTable();
         }
+    }
+
+    function filterUsers() {
+        let searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        let filteredUsers = users.filter(user =>
+            user.username.toLowerCase().includes(searchTerm) ||
+            user.email.toLowerCase().includes(searchTerm)
+        );
+        renderFilteredUsers(filteredUsers);
+    }
+
+    function renderFilteredUsers(filteredUsers) {
+        const userTable = document.getElementById('userTable');
+        userTable.innerHTML = '';
+        filteredUsers.forEach(user => {
+            userTable.innerHTML += `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.email}</td>
+                    <td>${user.role}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning" onclick="showEditUserModal(${user.id})">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function exportToCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,ID,Username,Email,Role\n";
+        users.forEach(user => {
+            csvContent += `${user.id},${user.username},${user.email},${user.role}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "users.csv");
+        document.body.appendChild(link);
+        link.click();
     }
 
     window.onload = fetchUsers;
 </script>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
