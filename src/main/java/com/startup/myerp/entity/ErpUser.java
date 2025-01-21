@@ -3,6 +3,7 @@ package com.startup.myerp.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -14,16 +15,22 @@ import java.util.List;
 public class ErpUser implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
 
+    @Column(unique = true, nullable = false, name = "user_name")
     private String username;
+    @Column(unique = true, nullable = false, name = "user_email")
     private String email;
+    @Column(nullable = false, name = "user_password")
     private String password;
-    private String role;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, name = "role_id")
+    private Role role;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_"+this.role.name()));
     }
 
     @Override
@@ -44,5 +51,9 @@ public class ErpUser implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    enum Role{
+        ADMIN, USER, CLIENT
     }
 }
