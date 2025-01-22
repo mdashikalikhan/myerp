@@ -28,6 +28,14 @@ public class ErpUser implements UserDetails {
     @Column(nullable = false, name = "role_id")
     private Role role;
 
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_"+this.role.name()));
@@ -53,7 +61,15 @@ public class ErpUser implements UserDetails {
         return true;
     }
 
-    enum Role{
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public enum Role{
         ADMIN, USER, CLIENT
     }
 }
