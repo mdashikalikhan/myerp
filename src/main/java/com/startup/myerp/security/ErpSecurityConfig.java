@@ -37,7 +37,7 @@ public class ErpSecurityConfig {
                     auth->auth
                             .requestMatchers("/admin/**").hasRole("ADMIN")
                             .requestMatchers("/user/**").hasAnyRole("USER", "CLIENT")
-                            .requestMatchers("/", "/register", "/login").permitAll()
+                            .requestMatchers("/", "/register", "/login", "/h2","/h2/**").permitAll()
                             .anyRequest().authenticated()
                 )
                 .formLogin(

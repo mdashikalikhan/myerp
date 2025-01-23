@@ -6,7 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
-@Repository
 public interface ErpUserRepository extends JpaRepository<ErpUser, Long> {
     Optional<ErpUser> findByUsername(String username);
 }
