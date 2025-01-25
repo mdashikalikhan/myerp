@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Jar File  ###
+
+*.jar
+*.asc
+*.md5
+*.7z
