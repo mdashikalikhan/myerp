@@ -48,8 +48,12 @@ public class ErpSecurityConfig {
                 )
                 .logout(
                     logout->logout
-                            .logoutUrl("/logout")
-                            .logoutSuccessUrl("/login?logout")
+                            .invalidateHttpSession(true)
+                            .logoutSuccessHandler(
+                                    (request, response, authentication)->{
+                                        response.sendRedirect("/login");
+                                    }
+                            )
                             .permitAll()
                 );
         return httpSecurity.build();

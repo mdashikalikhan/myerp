@@ -53,6 +53,9 @@
     <div th:if="${param.logout}" class="alert alert-success" role="alert">
         You have successfully logged out.
     </div>
+    <div th:if="${param.registered}" class="alert alert-success" role="alert">
+        You have successfully registered.
+    </div>
 
     <form th:action="@{/login}" method="post" id="loginForm">
         <!-- Username Field -->
