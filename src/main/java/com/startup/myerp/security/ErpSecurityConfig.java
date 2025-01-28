@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Configuration
 @EnableWebSecurity
@@ -49,11 +50,17 @@ public class ErpSecurityConfig {
                 .logout(
                     logout->logout
                             .invalidateHttpSession(true)
-                            .logoutSuccessHandler(
+                            .logoutUrl("/logout")
+                            .logoutSuccessUrl("/")
+
+                            /*.logoutSuccessHandler(
                                     (request, response, authentication)->{
-                                        response.sendRedirect("/login");
+                                        request.getSession(true).setAttribute("logout", "logout");
+
+                                        request.getRequestDispatcher("/").forward(request,
+                                                response);
                                     }
-                            )
+                            )*/
                             .permitAll()
                 );
         return httpSecurity.build();
