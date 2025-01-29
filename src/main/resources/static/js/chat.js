@@ -3,9 +3,13 @@ const messageInput = document.getElementById("messageInput");
 const sendMessageBtn = document.getElementById("sendMessageBtn");
 const typingIndicator = document.getElementById("typingIndicator");
 const typingUser = document.getElementById("typingUser");
-let typingTimeout;
+const emojiPickerBtn = document.getElementById("emojiPickerBtn");
+const fileUploadBtn = document.getElementById("fileUploadBtn");
+const fileInput = document.getElementById("fileInput");
 
 let stompClient = null;
+let typingTimeout;
+const username = "Admin"; // Replace with dynamic session username if available
 
 // Connect to WebSocket server using SockJS and STOMP
 function connect() {
@@ -13,6 +17,7 @@ function connect() {
     stompClient = Stomp.over(socket);
 
     stompClient.connect({}, function () {
+        console.log("Connected to WebSocket");
         stompClient.subscribe('/topic/public', function (message) {
             const data = JSON.parse(message.body);
             if (data.type === "CHAT") {
@@ -24,12 +29,20 @@ function connect() {
     });
 }
 
-// Send message function
+// Graceful disconnect
+function disconnect() {
+    if (stompClient !== null) {
+        stompClient.disconnect();
+        console.log("Disconnected from WebSocket");
+    }
+}
+
+// Send chat message
 function sendMessage() {
     const messageContent = messageInput.value.trim();
     if (messageContent) {
         const chatMessage = {
-            sender: "YourUsername", // Replace with dynamic username
+            sender: username,
             content: messageContent,
             type: "CHAT"
         };
@@ -41,55 +54,61 @@ function sendMessage() {
 
 // Show typing indicator
 function showTypingIndicator(user) {
-    typingUser.innerText = user;
-    typingIndicator.style.display = "block";
-    clearTimeout(typingTimeout);
-    typingTimeout = setTimeout(() => {
-        typingIndicator.style.display = "none";
-    }, 2000);
+    if (user !== username) {
+        typingUser.innerText = user;
+        typingIndicator.style.display = "block";
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            typingIndicator.style.display = "none";
+        }, 2000);
+    }
 }
 
-// Emit typing event
+// Emit typing event (debounced)
 function emitTyping() {
+    clearTimeout(typingTimeout);
     const chatMessage = {
-        sender: "YourUsername", // Replace with dynamic username
+        sender: username,
         type: "TYPING"
     };
-    stompClient.send("/app/chat.addUser", {}, JSON.stringify(chatMessage));
+    stompClient.send("/app/chat.typing", {}, JSON.stringify(chatMessage));
 }
 
 // Add message to chat
 function addMessageToChat(message, sender, isSelf) {
     const messageDiv = document.createElement("div");
     messageDiv.className = `chat-message ${isSelf ? "self" : ""}`;
-    messageDiv.innerHTML = `
-        <div class="message">
-            <strong>${sender}:</strong> ${message}
-        </div>
-    `;
+    messageDiv.innerHTML = `<div class="message"><strong>${sender}:</strong> ${message}</div>`;
     chatBody.appendChild(messageDiv);
     chatBody.scrollTop = chatBody.scrollHeight;
 }
 
-// Emoji picker
-document.getElementById("emojiPickerBtn").addEventListener("click", () => {
+// Emoji picker (basic)
+emojiPickerBtn.addEventListener("click", () => {
     messageInput.value += "😊"; // Simple emoji picker demo
 });
 
 // File upload handling
-document.getElementById("fileUploadBtn").addEventListener("click", () => {
-    document.getElementById("fileInput").click();
+fileUploadBtn.addEventListener("click", () => {
+    fileInput.click();
 });
 
-document.getElementById("fileInput").addEventListener("change", (event) => {
+fileInput.addEventListener("change", (event) => {
     const file = event.target.files[0];
     if (file) {
-        alert(`File uploaded: ${file.name}`);
+        const chatMessage = {
+            sender: username,
+            content: `📎 File uploaded: ${file.name}`,
+            type: "CHAT"
+        };
+        stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(chatMessage));
+        addMessageToChat(`📎 File uploaded: ${file.name}`, "You", true);
     }
 });
 
 // Logout function
 function logout() {
+    disconnect();
     alert("You have logged out.");
     window.location.href = "/login";  // Redirect to login page
 }
@@ -97,7 +116,6 @@ function logout() {
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
     connect();
-
     messageInput.addEventListener("keypress", emitTyping);
     sendMessageBtn.addEventListener("click", sendMessage);
 });

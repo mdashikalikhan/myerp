@@ -45,22 +45,26 @@ public class ErpSecurityConfig {
                     login->login
                             .loginPage("/login")
                             .successHandler(erpSuccessHandler())
+                            .failureHandler(
+                                    (request, response, exception) -> {
+                                        request.getSession(true).setAttribute("error", "error");
+                                        response.sendRedirect("/login");
+                                    }
+                            )
                             .permitAll()
                 )
                 .logout(
                     logout->logout
                             .invalidateHttpSession(true)
                             .logoutUrl("/logout")
-                            .logoutSuccessUrl("/")
 
-                            /*.logoutSuccessHandler(
+                            .logoutSuccessHandler(
                                     (request, response, authentication)->{
                                         request.getSession(true).setAttribute("logout", "logout");
 
-                                        request.getRequestDispatcher("/").forward(request,
-                                                response);
+                                        response.sendRedirect("/login");
                                     }
-                            )*/
+                            )
                             .permitAll()
                 );
         return httpSecurity.build();

@@ -19,7 +19,14 @@ public class WebSocketController {
         return message;
     }
 
+    @MessageMapping("/sendStatusUpdate")
     public void sendStatusUpdate(String status) {
         messagingTemplate.convertAndSend("/topic/employeeStatus", status);
+    }
+
+    @MessageMapping("/chat.typing")
+    @SendTo("/topic/public")
+    public ChatMessage typing(ChatMessage message) {
+        return message; // Broadcast typing notification to all users
     }
 }
