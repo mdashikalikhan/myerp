@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.security.PublicKey;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,9 +27,21 @@ public class SseEmitterService {
     }
 
     public void sendMessage(String message) {
+        System.out.println(message);
         emitters.forEach((key, emitter) -> {
             try {
                 emitter.send(SseEmitter.event().data(message));
+            } catch (IOException e) {
+                emitter.complete();
+                emitters.remove(key);
+            }
+        });
+    }
+
+    public void sendTypingEvent(String typingMessage){
+        emitters.forEach((key, emitter) -> {
+            try {
+                emitter.send(SseEmitter.event().name("typing").data(typingMessage));
             } catch (IOException e) {
                 emitter.complete();
                 emitters.remove(key);
