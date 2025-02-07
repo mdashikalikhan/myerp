@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  app:
+    image: myerp:latest
+    container_name: myerp
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/mydb?serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+
+    depends_on:
+      - redis
+    networks:
+      - myerp-network
+
+  # Redis for messaging
+  redis:
+    image: redis:6
+    container_name: myerp-redis
+    ports:
+      - "6371:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - myerp-network
+
+volumes:
+  redis-data:
+
+networks:
+  myerp-network:
+    driver: bridge
+
+
