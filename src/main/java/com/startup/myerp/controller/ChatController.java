@@ -4,6 +4,7 @@ import com.startup.myerp.service.MessagePublisher;
 import com.startup.myerp.service.SseEmitterService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,7 +22,7 @@ public class ChatController {
 
     @PostMapping("/send")
     public ResponseEntity<Void> sendMessage(@RequestBody Map<String, String> request){
-        String sender = "USER-A";
+        String sender = SecurityContextHolder.getContext().getAuthentication().getName();
         String content = request.get("message");
 
         Map<String, String> message = new HashMap<>();
@@ -33,7 +34,8 @@ public class ChatController {
 
     @PostMapping("/typing")
     public ResponseEntity<Void> handleTyping(){
-        sseEmitterService.sendTypingEvent("User is Typing...");
+        String sender = SecurityContextHolder.getContext().getAuthentication().getName();
+        sseEmitterService.sendTypingEvent(sender + " is Typing...");
         return ResponseEntity.ok().build();
     }
 }
