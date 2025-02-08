@@ -1,5 +1,5 @@
 # myerp
-A basic ERP for a starter business. This application requires mysql and REDIS to run. You can use both external or docker image. All paramters are configured by arguments.
+A basic ERP for a starter business. This application requires mysql and REDIS to run. You can use both external or docker image. All necessary properties are parameterized.
 
 ##### Docker connect with external local mysql DB. Name: mydb, user/password: root
 
